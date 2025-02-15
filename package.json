@@ -1,0 +1,19 @@
+{
+  "scripts": {
+    "remove:importUnused": "node src/bin/remove_unused_imports.js"
+  },
+  "dependencies": {
+    "@babel/generator": "^7.26.9",
+    "@babel/parser": "^7.26.9",
+    "@babel/traverse": "^7.26.9",
+    "babel-core": "^6.26.3"
+  },
+  "name": "babel",
+  "version": "1.0.0",
+  "main": "src/lib.js",
+  "devDependencies": {},
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}
