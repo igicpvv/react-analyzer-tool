@@ -1,0 +1,1 @@
+npm run remove:comments --projectDir=C:/@/Web/Template/Angle/portal_profcontrol_cliente/src

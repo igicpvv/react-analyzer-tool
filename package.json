@@ -1,6 +1,7 @@
 {
   "scripts": {
-    "remove:importUnused": "node src/bin/remove_unused_imports.js"
+    "remove:importUnused": "node src/bin/remove_unused_imports.js",
+    "remove:comments": "node src/bin/remove_comment_blocks.js"
   },
   "dependencies": {
     "@babel/generator": "^7.26.9",

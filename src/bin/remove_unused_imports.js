@@ -1,12 +1,12 @@
 const path = require('path');
-const { getFiles, getDictReadFiles, writeFile } = require("../lib");
+const { getDictReadFiles, writeFile } = require("../lib");
 const parser = require("@babel/parser");
 const traverse = require("@babel/traverse").default;
 const generator = require("@babel/generator").default;
 
-// const projectDir = process.env.projectDir || process.env.npm_config_projectDir;
-const projectDir = "C:/@/Web/Template/Angle/portal_profcontrol_cliente/src";
-const ___EXT = process.env.EXT || ".jsx";
+const projectDir = process.env.projectDir || process.env.npm_config_projectDir;
+const ___DRY_RUN = (process.env.DRY_RUN || process.env.npm_config_dry_run) ?? false;
+const ___EXT = process.env.EXT;
 
 const __PRESERVE_IMPORT = [
     "React"
@@ -17,7 +17,7 @@ if (!projectDir) {
     return;
 }
 
-class File {
+class FileElement {
     name = "";
     imports = new Set();
     constructor(name) {
@@ -70,7 +70,7 @@ for (const fileIndex in files) {
         plugins: ["jsx", "classProperties"]
     });
 
-    const file = new File(fileIndex);
+    const file = new FileElement(fileIndex);
     const { _CountStepAdd, _CountStepIncrement, _Remove } = FileContext(file);
     total_files.push(file);
     //import count
@@ -103,17 +103,20 @@ for (const fileIndex in files) {
         },
     });
 
-    const result = generator(ast);
-    if ([...file.imports].some(_import => _import.total() == 0
-        && (__PRESERVE_IMPORT.indexOf(_import.name) == -1))
-    )
-        writeFile(file.name, result.code);
+    if (!___DRY_RUN) {
+        const result = generator(ast);
+        if ([...file.imports].some(_import => _import.total() == 0
+            && (__PRESERVE_IMPORT.indexOf(_import.name) == -1))
+        )
+            writeFile(file.name, result.code);
+    }
 }
 
-// for (const file of total_files) {
-//     console.log(file.name);
-//     for (const importCount of [...file.imports])
-//         console.log(`${importCount.name} - ${importCount.total()}`);
-// }
+if (___DRY_RUN)
+    for (const file of total_files) {
+        console.log(file.name);
+        for (const importCount of [...file.imports])
+            console.log(`${importCount.name} - ${importCount.total()}`);
+    }
 
 console.log("#");
