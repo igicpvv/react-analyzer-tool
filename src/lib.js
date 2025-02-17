@@ -1,3 +1,4 @@
+require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
 const babel = require("babel-core");
@@ -46,6 +47,10 @@ function getFiles(dir, ext) {
     return result;
 }
 
+function writeFile(file, content) {
+    fs.writeFileSync(file, content);
+}
+
 function getDictReadFiles(dir, ext) {
     const result = [];
     const files = getFiles(dir, ext);
@@ -58,5 +63,6 @@ function getDictReadFiles(dir, ext) {
 module.exports = {
     getFiles,
     getJSFiles,
-    getDictReadFiles
+    getDictReadFiles,
+    writeFile
 }
