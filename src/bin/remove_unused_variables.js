@@ -1,5 +1,5 @@
 const path = require('path');
-const { getDictReadFiles, writeFile, MethodAdapter, ClassAdapter } = require("../lib");
+const { getDictReadFiles, writeFile, MethodAdapter, ClassAdapter, IdentifierAdapter, FileElement, VariableElement, MethodScopeElement } = require("../lib");
 const parser = require("@babel/parser");
 const traverse = require("@babel/traverse").default;
 const generator = require("@babel/generator").default;
@@ -14,89 +14,19 @@ if (!projectDir) {
     return;
 }
 
-function _getVariablesByClass(file) {
-    const variables = [];
-
-    for (const _class of file.elements) {
-        variables.push(..._class.variables);
-        for (const methods of _class.methods) {
-            variables.push(...methods.variables);
-        }
-    }
-
-    return variables;
-}
-
-function _getVariablesByClass2(file) {
-    const variables = {};
-
-    for (let i = 0; i < file.elements.size; i++) {
-        const _class = [...file.elements][i];
-        const className = _class?.name ?? 0;
-        for (const methods of [..._class.methods]) {
-            const methodName = methods?.name ?? 0;
-
-            if (!variables[className]) variables[className] = [];
-            if (!variables[className][methodName]) variables[className][methodName] = [];
-
-            variables[className][methodName].push(...methods.variables);
-        }
-    }
-
-    return variables;
-}
-
 function FileContext(file) {
-    function _StepAdd(path) {
-        const classScope = new ClassAdapter(path);
-
-        const _class = [...file.elements].find(x => x.name == classScope.name);
-
-        if (classScope.inMethodScope())
-            
-
-        // let _class;
-        // if (classScope) {
-        //     _class = [...file.elements].find(x => x.name == classScope.node.id.name);
-        //     if (!_class) {
-        //         _class = new ClassScopeElement(classScope.node.id.name);
-        //         file.elements.add(_class);
-        //     }
-        // }
-
-        // let _method;
-        // if (methodScope) {
-        //     _method = [..._class.methods].find(x => x.name == methodScope.node.key.name);
-        //     if (!_method) {
-        //         _method = new MethodScopeElement(methodScope.node.key.name);
-        //         _class.methods.add(_method);
-        //     }
-        // }
-
-        // let _variable = new VariableElement(path.node.name);
-
-        // if (_method) _method.variables.add(_variable);
-        // else if (_class) _class.variables.add(_variable);
-        // else file.variables.add(_variable);
-    }
     function _StepIncrement(path) {
-        const _class = path.findParent(x => x.isClassDeclaration());
-        const _method = path.findParent(x => x.isClassMethod());
-
-        const className = _class?.node?.id?.name ?? 0;
-        const methodName = _method?.node?.key?.name ?? 0;
-
-        const variables = _getVariablesByClass2(file);
-
-        console.log(className, methodName);
-        variables[className][methodName].find(x => x.name == path.node.name).add();
+        const identifier = new IdentifierAdapter(path);
+        // console.log(file.name, identifier.classs.name, identifier.method.name, path.node.name);
+        const variable = file.getVar(identifier.classs, identifier.method, path.node.name);
+        if (variable) variable.add();
     }
     function _Remove(path) {
         const entity = [...file.variables].find(x => x.name == path.node.name);
         if (entity && entity.total() == 0) path.remove();
     }
 
-    return { _StepAdd, _StepIncrement, _Remove };
+    return { _StepIncrement, _Remove };
 }
 
 const total_files = [];
@@ -109,7 +39,7 @@ for (const fileIndex in files) {
     });
 
     const file = new FileElement(fileIndex);
-    const { _StepAdd, _StepIncrement, _Remove } = FileContext(file);
+    const { _StepIncrement, _Remove } = FileContext(file);
     total_files.push(file);
 
     //commnets add
@@ -120,9 +50,42 @@ for (const fileIndex in files) {
         CallExpression(path) {
             path.skip();
         },
+        FunctionDeclaration(path) {
+            const identifier = new IdentifierAdapter(path);
+            const _class = identifier.classs;
+            const _method = new MethodScopeElement(path.node.id.name);
+            const list = identifier.params;
+
+            for (const variable of list) {
+                const _variable = new VariableElement(variable.name);
+                file.addVar(_class, _method, _variable);
+            }
+        },
+        ArrowFunctionExpression(path) {
+            const property = path.findParent(p => p.isClassProperty());
+            if (!property) { path.skip(); return }
+
+            const identifier = new IdentifierAdapter(path);
+            const _class = identifier.classs;
+            const _method = new MethodScopeElement(property.node.key.name);
+            const list = identifier.params;
+
+            for (const variable of list) {
+                const _variable = new VariableElement(variable.name);
+                file.addVar(_class, _method, _variable);
+            }
+        },
         Identifier(path) {
-            const parent = path.findParent(p => p.isVariableDeclaration() || p.isArrowFunctionExpression());
-            if (parent) _StepAdd(path);
+            const isVariableDeclaration = !!path.findParent(p => p.isVariableDeclaration());
+            if (isVariableDeclaration) {
+                const identifier = new IdentifierAdapter(path);
+
+                const _method = identifier.method;
+                const _class = identifier.classs;
+                const _variable = new VariableElement(path.node.name);
+
+                file.addVar(_class, _method, _variable);
+            }
         }
     });
 
@@ -132,16 +95,14 @@ for (const fileIndex in files) {
             path.skip();
         },
         Identifier(path) {
-            const variables = _getVariablesByClass(file);
-
-            if (variables.some(x => x.name == path.node.name)) _StepIncrement(path);
+            _StepIncrement(path);
         }
     });
 
     //comments remove
     traverse(ast, {
         VariableDeclaration(path) {
-            _Remove(path);
+            // _Remove(path);
         }
     });
 
@@ -156,8 +117,9 @@ for (const fileIndex in files) {
 
 if (___DRY_RUN)
     for (const file of total_files) {
-        const variables = _getVariablesByClass(file);
-        console.log(`${file.name} - Variables: [Total:${variables.length}] [${variables.map(x => `${x.name}:${x.total()}`).join(",")}] - Unused: ${[...file.variables].filter(x => x.total() == 0).length}`);
+        const variables = file.listVars();
+        const zered = variables.filter(x => x.total() == 0);
+        console.log(`${file.name} - Variables: [Total:${variables.length}] [${variables.map(x => `${x.name}:${x.total()}`).join(",")}] - Unused: [Total:${zered.length}] [${zered.map(x => `${x.name}:${x.total()}`).join(",")}]`);
     }
 
 console.log("#");
