@@ -1,6 +1,7 @@
 {
   "scripts": {
-    "remove:importUnused": "node src/bin/remove_unused_imports.js",
+    "remove:imports": "node src/bin/remove_unused_imports.js",
+    "remove:variables": "node src/bin/remove_unused_variables.js",
     "remove:comments": "node src/bin/remove_comment_blocks.js"
   },
   "dependencies": {

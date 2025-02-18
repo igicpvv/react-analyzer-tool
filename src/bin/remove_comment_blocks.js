@@ -8,6 +8,10 @@ const projectDir = process.env.projectDir || process.env.npm_config_projectDir;
 const ___DRY_RUN = (process.env.DRY_RUN || process.env.npm_config_dry_run) ?? false;
 const ___EXT = process.env.EXT;
 
+const __PRESERVE_DOC_TAG = [
+    "#4Doc"
+]
+
 if (!projectDir) {
     console.error("--projectDir needed!");
     return;
@@ -28,18 +32,42 @@ class CommentCount {
     }
 }
 
+function hasBlockTag(comment) {
+    for (const tag of __PRESERVE_DOC_TAG)
+        if (comment.value.indexOf(tag) != -1)
+            return true;
+    return false;
+}
+
 function FileContext(file) {
     function _CountStepIncrement(path) {
-        // if (path.node.leadingComments)
-        //     for (const comment of path.node.leadingComments)
-        //         file.comments.add(new CommentCount(comment.value));
+        if (path.node.leadingComments)
+            for (const comment of path.node.leadingComments)
+                if (!hasBlockTag(comment))
+                    file.comments.add(new CommentCount(comment.value));
         if (path.node.trailingComments)
             for (const comment of path.node.trailingComments)
-                file.comments.add(new CommentCount(comment.value));
+                if (!hasBlockTag(comment))
+                    file.comments.add(new CommentCount(comment.value));
     }
     function _Remove(path) {
-        // if (path.node.leadingComments) path.node.leadingComments = null;
-        if (path.node.trailingComments) path.node.trailingComments = null;
+        if (path.node.leadingComments) {
+            const list = [...path.node.leadingComments];
+            for (const comment of list)
+                if (!hasBlockTag(comment))
+                    path.node.leadingComments.splice(
+                        path.node.leadingComments.indexOf(comment), 1
+                    );
+        };
+        if (path.node.trailingComments) {
+            const list = [...path.node.trailingComments];
+            for (const comment of list)
+                if (!hasBlockTag(comment))
+                    path.node.trailingComments.splice(
+                        path.node.trailingComments.indexOf(comment), 1
+                    );
+        }
+
     }
 
     return { _CountStepIncrement, _Remove };

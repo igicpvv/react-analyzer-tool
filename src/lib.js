@@ -64,5 +64,86 @@ module.exports = {
     getFiles,
     getJSFiles,
     getDictReadFiles,
-    writeFile
+    writeFile,
+    FileElement,
+    ClassScopeElement,
+    MethodScopeElement,
+    VariableElement,
+    MethodAdapter,
+    ClassAdapter,
+}
+
+class FileElement {
+    name = "";
+    constructor(name) {
+        this.name = name;
+    }
+    variables = new Set();
+    elements = new Set();
+}
+class ClassScopeElement {
+    name = "";
+    methods = new Set();
+    variables = new Set();
+    constructor(name) {
+        this.name = name;
+    }
+}
+class MethodScopeElement {
+    name = "";
+    variables = new Set();
+    constructor(name) {
+        this.name = name;
+    }
+}
+class VariableElement {
+    name = "";
+    count = 0;
+    constructor(name) {
+        this.name = name;
+    }
+    add() {
+        this.count++;
+    }
+    total() {
+        return this.count;
+    }
+}
+
+class MethodAdapter {
+
+    constructor(path) {
+        this.path = path;
+    }
+
+    get name() {
+        return this.get().node.key.name;
+    }
+
+    get() {
+        return path.findParent(x => x.isClassMethod()) ?? { node: { key: { name: 0 } } };
+    }
+
+}
+
+class ClassAdapter {
+    constructor(path) {
+        this.path = path;
+    }
+
+    MethodScope() {
+        return new this.MethodScope(this.path).get();
+    }
+
+    inMethodScope() {
+        return !!(new this.MethodScope(this.path).get());
+    }
+
+    get name() {
+        return this.get().node.id.name;
+    }
+
+    get() {
+        return path.findParent(x => x.isClassDeclaration()) ?? { node: { id: { name: 0 } } };
+    }
 }
