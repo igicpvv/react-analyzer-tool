@@ -77,10 +77,6 @@ class FileElement {
     functions = new Set();
 
     getVar(_class, _method, varName) {
-
-        if (_method.name == "unregister" && varName == "unregister")
-            console.log("X");
-
         if (_class.name == 0)
             if (_method.name == 0)
                 return [...this.variables].find(x => x.name == varName);
@@ -247,6 +243,32 @@ class IdentifierAdapter {
 
     get params() {
         return new ArrowFunctionAdapter(this.path).params();
+    }
+
+    get variables() {
+        const _variables = [];
+
+        const arrowFunction = this._path.findParent(p => p.isArrowFunctionExpression());
+        if (!!arrowFunction) {
+            const adapter = new IdentifierAdapter(arrowFunction);
+            _variables.push(...adapter.params());
+        }
+
+        const defaultFunction = this._path.findParent(p => p.isFunctionDeclaration());
+        if (!!defaultFunction) {
+            const adapter = new IdentifierAdapter(defaultFunction);
+            _variables.push(...adapter.params());
+        }
+
+        return _variables;
+    }
+
+    get declarations() {
+        const _declarations = [];
+
+        if (this.path.node?.declarations) _declarations.push(...this.path.node.declarations);
+
+        return _declarations;
     }
 
 }

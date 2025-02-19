@@ -50,6 +50,26 @@ for (const fileIndex in files) {
         CallExpression(path) {
             path.skip();
         },
+        VariableDeclaration(path) {
+            const identifier = new IdentifierAdapter(path);
+            const _class = identifier.classs;
+            const _method = identifier.method;
+            const list = identifier.declarations;
+
+            for (const declarator of list)
+                if (declarator.id?.name)
+                    file.addVar(_class, _method, new VariableElement(declarator.id.name));
+                else {
+                    for (const oPattern of list)
+                        if (oPattern.id.elements)
+                            for (const item of oPattern.id.elements)
+                                file.addVar(_class, _method, new VariableElement(item.name));
+                        else
+                            for (const propertie of oPattern.id.properties) // desconstrução;
+                                if (propertie?.argument) file.addVar(_class, _method, new VariableElement(propertie.argument.name));
+                                else file.addVar(_class, _method, new VariableElement(propertie.key.name));
+                }
+        },
         FunctionDeclaration(path) {
             const identifier = new IdentifierAdapter(path);
             const _class = identifier.classs;
@@ -75,22 +95,13 @@ for (const fileIndex in files) {
                 file.addVar(_class, _method, _variable);
             }
         },
-        Identifier(path) {
-            const isVariableDeclaration = !!path.findParent(p => p.isVariableDeclaration());
-            if (isVariableDeclaration) {
-                const identifier = new IdentifierAdapter(path);
-
-                const _method = identifier.method;
-                const _class = identifier.classs;
-                const _variable = new VariableElement(path.node.name);
-
-                file.addVar(_class, _method, _variable);
-            }
-        }
     });
 
     //commnets count
     traverse(ast, {
+        VariableDeclaration(path) {
+            path.skip();
+        },
         ImportDeclaration(path) {
             path.skip();
         },
@@ -119,7 +130,42 @@ if (___DRY_RUN)
     for (const file of total_files) {
         const variables = file.listVars();
         const zered = variables.filter(x => x.total() == 0);
-        console.log(`${file.name} - Variables: [Total:${variables.length}] [${variables.map(x => `${x.name}:${x.total()}`).join(",")}] - Unused: [Total:${zered.length}] [${zered.map(x => `${x.name}:${x.total()}`).join(",")}]`);
+        // console.log(`${file.name} - Variables: [Total:${variables.length}] [${variables.map(x => `${x.name}:${x.total()}`).join(",")}] - Unused: [Total:${zered.length}] [${zered.map(x => `${x.name}:${x.total()}`).join(",")}]`);
+
+        console.log((`${file.name} {`));
+        console.log(`Globais:`);
+        file.variables.forEach(v => {
+            console.log(`\t${v.name} - ${v.total()}`);
+        });
+        console.log(`De Funções:`);
+        file.functions.forEach(v => {
+            console.log(`\t-${v.name}`);
+            v.variables.forEach(v => {
+                console.log(`\t\t-${v.name} - ${v.total()}`);
+            });
+        });
+
+        // console.log(`De Classe:`);
+        file.classes.forEach(c => {
+            console.log(`\tclass ${c.name} {`);
+            c.variables.forEach(variable_class => {
+                console.log(`\t\t - ${variable_class.name} - ${variable_class.total()}`);
+            });
+            // console.log(`\tDe Métodos:`);
+            c.methods.forEach(method => {
+                console.log(`\t\t${method.name}() {`);
+                method.variables.forEach(v => {
+                    console.log(`\t\t\t - ${v.name} - ${v.total()}`);
+                });
+                console.log(`\t\t\t}`);
+            });
+            console.log(`\t\t}`);
+        });
+
+        // zered.forEach(variable => {
+        //     console.log(`- ${variable.name} - ${variable.total()}`);
+        // });
+        // console.log((`}`));
     }
 
 console.log("#");
