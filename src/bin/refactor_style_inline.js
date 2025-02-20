@@ -61,7 +61,8 @@ for (const fileIndex in files) {
 
             for (const prop of list)
                 if (prop.value.expression.type == "ObjectExpression")
-                    file.styles[id(path)] = new StyleElement(id(path), prop.value.expression, path.node.openingElement.name.name);
+                    if (!prop.value.expression.properties.some(x => !(x.value.type == "StringLiteral" || x.value.type == "NumericLiteral")))
+                        file.styles[id(path)] = new StyleElement(id(path), prop.value.expression, path.node.openingElement.name.name);
         }
     });
 
@@ -97,13 +98,16 @@ for (const fileIndex in files) {
                 .filter(x => x.name.name == "style");
             if (list.length == 0) return;
 
+            if (file.name.indexOf("ClientSelection") != -1)
+                console.log(file.name);
+
             for (const prop of list)
-                if (prop.value.expression.type == "ObjectExpression") {
-                    prop.value.expression = t.memberExpression(
-                        t.identifier("styles"),
-                        t.identifier(file.styles[id(path)].idealName)
-                    )
-                }
+                if (prop.value.expression.type == "ObjectExpression")
+                    if (!prop.value.expression.properties.some(x => !(x.value.type == "StringLiteral" || x.value.type == "NumericLiteral")))
+                        prop.value.expression = t.memberExpression(
+                            t.identifier("styles"),
+                            t.identifier(file.styles[id(path)].idealName)
+                        );
         }
     });
 
