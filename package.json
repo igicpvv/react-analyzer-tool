@@ -2,12 +2,14 @@
   "scripts": {
     "remove:imports": "node src/bin/remove_unused_imports.js",
     "remove:variables": "node src/bin/remove_unused_variables.js",
-    "remove:comments": "node src/bin/remove_comment_blocks.js"
+    "remove:comments": "node src/bin/remove_comment_blocks.js",
+    "refactor:styles": "node src/bin/refactor_style_inline.js"
   },
   "dependencies": {
     "@babel/generator": "^7.26.9",
     "@babel/parser": "^7.26.9",
     "@babel/traverse": "^7.26.9",
+    "@babel/types": "^7.26.9",
     "babel-core": "^6.26.3",
     "dotenv": "^16.4.7"
   },

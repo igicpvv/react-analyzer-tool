@@ -75,6 +75,7 @@ class FileElement {
     variables = new Set();
     classes = new Set();
     functions = new Set();
+    styles = [];
 
     getVar(_class, _method, varName) {
         if (_class.name == 0)
@@ -283,6 +284,75 @@ class ArrowFunctionAdapter {
     }
 }
 
+
+function printFullFileComponent(file) {
+    console.log((`${file.name} {`));
+    console.log(`Globais:`);
+    file.variables.forEach(v => {
+        console.log(`\t${v.name} - ${v.total()}`);
+    });
+    console.log(`De Funções:`);
+    file.functions.forEach(v => {
+        console.log(`\t-${v.name}`);
+        v.variables.forEach(v => {
+            console.log(`\t\t-${v.name} - ${v.total()}`);
+        });
+    });
+
+    // console.log(`De Classe:`);
+    file.classes.forEach(c => {
+        console.log(`\tclass ${c.name} {`);
+        c.variables.forEach(variable_class => {
+            console.log(`\t\t - ${variable_class.name} - ${variable_class.total()}`);
+        });
+        // console.log(`\tDe Métodos:`);
+        c.methods.forEach(method => {
+            console.log(`\t\t${method.name}() {`);
+            method.variables.forEach(v => {
+                console.log(`\t\t\t - ${v.name} - ${v.total()}`);
+            });
+            console.log(`\t\t\t}`);
+        });
+        console.log(`\t\t}`);
+    });
+}
+
+function printZeredFileComponent(file) {
+    console.log((`${file.name} {`));
+    console.log(`Globais:`);
+    [...file.variables].filter(x => x.total() == 0).forEach(v => {
+        console.log(`\t${v.name} - ${v.total()}`);
+    });
+    console.log(`De Funções:`);
+    file.functions.forEach(v => {
+        console.log(`\t-${v.name}`);
+        [...v.variables].filter(x => x.total() == 0).forEach(v => {
+            console.log(`\t\t-${v.name} - ${v.total()}`);
+        });
+    });
+
+    // console.log(`De Classe:`);
+    file.classes.forEach(c => {
+        console.log(`\tclass ${c.name} {`);
+        [...c.variables].filter(x => x.total() == 0).forEach(variable_class => {
+            console.log(`\t\t - ${variable_class.name} - ${variable_class.total()}`);
+        });
+        // console.log(`\tDe Métodos:`);
+        c.methods.forEach(method => {
+            console.log(`\t\t${method.name}() {`);
+            [...method.variables].filter(x => x.total() == 0).forEach(v => {
+                console.log(`\t\t\t - ${v.name} - ${v.total()}`);
+            });
+            console.log(`\t\t\t}`);
+        });
+        console.log(`\t\t}`);
+    });
+}
+
+function id(path) {
+    return `${path.node.start}-${path.node.end}`;
+}
+
 module.exports = {
     getFiles,
     getJSFiles,
@@ -295,4 +365,7 @@ module.exports = {
     MethodAdapter,
     ClassAdapter,
     IdentifierAdapter,
+    printFullFileComponent,
+    printZeredFileComponent,
+    id
 }

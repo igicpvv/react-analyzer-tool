@@ -1,5 +1,5 @@
 const path = require('path');
-const { getDictReadFiles, writeFile, MethodAdapter, ClassAdapter, IdentifierAdapter, FileElement, VariableElement, MethodScopeElement } = require("../lib");
+const { getDictReadFiles, writeFile, MethodAdapter, ClassAdapter, IdentifierAdapter, FileElement, VariableElement, MethodScopeElement, printZeredFileComponent } = require("../lib");
 const parser = require("@babel/parser");
 const traverse = require("@babel/traverse").default;
 const generator = require("@babel/generator").default;
@@ -22,8 +22,68 @@ function FileContext(file) {
         if (variable) variable.add();
     }
     function _Remove(path) {
-        const entity = [...file.variables].find(x => x.name == path.node.name);
-        if (entity && entity.total() == 0) path.remove();
+        const adapter = new IdentifierAdapter(path);
+        const _class = adapter.classs;
+        const _method = adapter.method;
+        // const _variables = adapter.variables;
+        const declarations = adapter.declarations;
+
+        let for_remove = {
+            id_name: [],
+            id_elements: [],
+            else_id_properties: [],
+            arguments: []
+        }
+
+        for (const key in declarations) {
+            const declarator = declarations[key];
+            if (declarator.id?.name) { // única variável declarada;
+                const entity = file.getVar(_class, _method, new VariableElement(declarator.id.name));
+                if (!!entity && entity.total() == 0) for_remove.id_name.push([key, declarator]);
+            } else {
+                for (const pkey in declarations) {
+                    const oPattern = declarations[pkey];
+                    if (oPattern.id.elements) {
+                        for (const skey in oPattern.id.elements) {
+                            const item = oPattern.id.elements[skey];
+                            const entity = file.getVar(_class, _method, item.name);
+                            if (!!entity && entity.total() == 0) {
+                                // console.log("oPattern.id.elements", _class.name, _method.name, item.name);
+                                for_remove.id_elements.push([pkey, skey, item]);
+                            }
+                        }
+                    } else {
+                        for (const skey in oPattern.id.properties) {
+                            const propertie = oPattern.id.properties[skey];
+                            if (propertie?.argument) {
+                                const entity = file.getVar(_class, _method, propertie.argument.name);
+                                if (!!entity && entity.total() == 0) {
+                                    // console.log("oPattern.id.properties", _class.name, _method.name, item.name);
+                                    for_remove.arguments.push([pkey, skey, propertie]);
+                                }
+                            } else {
+                                const entity = file.getVar(_class, _method, propertie.key.name);
+                                if (!!entity && entity.total() == 0) {
+                                    for_remove.else_id_properties.push([pkey, skey, propertie]);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        for (const item of for_remove.id_name)
+            path.remove();
+        for (const item of for_remove.id_elements) {
+            path.node.declarations[item[0]].id.elements[item[1]] = null;
+            path.node.declarations[item[0]].id.elements = path.node.declarations[item[0]].id.elements.filter(x => x != null);
+        }
+        for (const item of for_remove.else_id_properties) path.node.declarations[item[0]].id.properties[item[1]] = null;
+        for (const item of for_remove.arguments) path.node.declarations[item[0]].id.properties[item[1]].argument = null;
+
+        for (const item of for_remove.else_id_properties) if (for_remove.else_id_properties.length > 0) path.node.declarations[item[0]].id.properties = path.node.declarations[item[0]].id.properties.filter(x => x != null);
+        for (const item of for_remove.arguments) if (for_remove.arguments.length > 0) path.node.declarations[item[0]].id.properties = path.node.declarations[item[0]].id.properties.filter(x => x.argument != null);
     }
 
     return { _StepIncrement, _Remove };
@@ -42,7 +102,7 @@ for (const fileIndex in files) {
     const { _StepIncrement, _Remove } = FileContext(file);
     total_files.push(file);
 
-    //commnets add
+    //variables add
     traverse(ast, {
         ImportDeclaration(path) {
             path.skip();
@@ -97,7 +157,7 @@ for (const fileIndex in files) {
         },
     });
 
-    //commnets count
+    //variables count
     traverse(ast, {
         VariableDeclaration(path) {
             path.skip();
@@ -110,10 +170,10 @@ for (const fileIndex in files) {
         }
     });
 
-    //comments remove
+    //variables remove
     traverse(ast, {
         VariableDeclaration(path) {
-            // _Remove(path);
+            _Remove(path);
         }
     });
 
@@ -132,35 +192,7 @@ if (___DRY_RUN)
         const zered = variables.filter(x => x.total() == 0);
         // console.log(`${file.name} - Variables: [Total:${variables.length}] [${variables.map(x => `${x.name}:${x.total()}`).join(",")}] - Unused: [Total:${zered.length}] [${zered.map(x => `${x.name}:${x.total()}`).join(",")}]`);
 
-        console.log((`${file.name} {`));
-        console.log(`Globais:`);
-        file.variables.forEach(v => {
-            console.log(`\t${v.name} - ${v.total()}`);
-        });
-        console.log(`De Funções:`);
-        file.functions.forEach(v => {
-            console.log(`\t-${v.name}`);
-            v.variables.forEach(v => {
-                console.log(`\t\t-${v.name} - ${v.total()}`);
-            });
-        });
-
-        // console.log(`De Classe:`);
-        file.classes.forEach(c => {
-            console.log(`\tclass ${c.name} {`);
-            c.variables.forEach(variable_class => {
-                console.log(`\t\t - ${variable_class.name} - ${variable_class.total()}`);
-            });
-            // console.log(`\tDe Métodos:`);
-            c.methods.forEach(method => {
-                console.log(`\t\t${method.name}() {`);
-                method.variables.forEach(v => {
-                    console.log(`\t\t\t - ${v.name} - ${v.total()}`);
-                });
-                console.log(`\t\t\t}`);
-            });
-            console.log(`\t\t}`);
-        });
+        printZeredFileComponent(file);
 
         // zered.forEach(variable => {
         //     console.log(`- ${variable.name} - ${variable.total()}`);
