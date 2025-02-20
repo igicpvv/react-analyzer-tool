@@ -4,8 +4,7 @@ const parser = require("@babel/parser");
 const traverse = require("@babel/traverse").default;
 const generator = require("@babel/generator").default;
 
-// const projectDir = process.env.projectDir || process.env.npm_config_projectDir;
-const projectDir = "C:/@/Web/Template/Angle/portal_profcontrol_cliente/src";
+const projectDir = process.env.projectDir || process.env.npm_config_projectDir;
 const ___DRY_RUN = (process.env.DRY_RUN || process.env.npm_config_dry_run) ?? true;
 const ___EXT = process.env.EXT;
 
