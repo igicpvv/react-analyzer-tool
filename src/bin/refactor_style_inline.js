@@ -7,7 +7,7 @@ const t = require("@babel/types");
 
 // const projectDir = process.env.projectDir || process.env.npm_config_projectDir;
 const projectDir = "C:/@/Web/Template/Angle/portal_profcontrol_cliente/src";
-const ___DRY_RUN = (process.env.DRY_RUN || process.env.npm_config_dry_run) ?? true;
+const ___DRY_RUN = (process.env.DRY_RUN || process.env.npm_config_dry_run) ?? false;
 const ___EXT = process.env.EXT;
 
 if (!projectDir) {
@@ -18,7 +18,15 @@ if (!projectDir) {
 class StyleElement {
     id;
     element;
-    idealName;
+    _idealName;
+
+    set idealName(name) {
+        this._idealName = name;
+    }
+
+    get idealName() {
+        return this._idealName + this.id.replace("-", "");
+    }
 
     constructor(id, element, idealName = '') {
         this.id = id;
@@ -26,8 +34,6 @@ class StyleElement {
         this.idealName = idealName[0].toLowerCase() + idealName.slice(1);
     }
 }
-
-const catalog = [];
 
 const total_files = [];
 const files = getDictReadFiles(projectDir, ___EXT);
@@ -60,7 +66,8 @@ for (const fileIndex in files) {
     });
 
     const objectExpression = [];
-    for (const propertie of file.styles) {
+    for (const key of Object.keys(file.styles)) {
+        const propertie = file.styles[key];
         objectExpression.push(
             t.objectProperty(t.identifier(propertie.idealName), propertie.element)
         );
@@ -100,28 +107,28 @@ for (const fileIndex in files) {
         }
     });
 
-    if (file.name.indexOf("SchedulingFilesSelection") != -1)
-        console.log("X");
-
-    if (!___DRY_RUN && file.styles.size > 0) {
+    if (!___DRY_RUN) {
         const result = generator(ast);
-        writeFile(file.name, result.code);
+
+        if (Object.keys(file.styles).length > 0)
+            writeFile(file.name, result.code);
     }
 }
 
 if (___DRY_RUN)
     for (const file of total_files) {
-        const variables = file.listVars();
-        const zered = variables.filter(x => x.total() == 0);
-
-        if (file.name.indexOf("SchedulingFilesSelection") != -1)
-            console.log("X");
-
-        console.log(file.name + "const styles = {");
+        console.log(file.name);
+        console.log("const styles = {");
         for (const styleKey of Object.keys(file.styles)) {
             console.log(` - ${file.styles[styleKey].idealName}`)
         }
         console.log("}");
     }
+else {
+    console.log("Arquivos modificados:");
+    for (const file of total_files) {
+        if (Object.keys(file.styles).length > 0) console.log(file.name, " - ", Object.keys(file.styles).length);
+    }
+}
 
 console.log("#");
