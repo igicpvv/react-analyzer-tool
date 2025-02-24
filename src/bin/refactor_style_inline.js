@@ -5,7 +5,8 @@ const traverse = require("@babel/traverse").default;
 const generator = require("@babel/generator").default;
 const t = require("@babel/types");
 
-const projectDir = process.env.projectDir || process.env.npm_config_projectDir;
+// const projectDir = process.env.projectDir || process.env.npm_config_projectDir;
+const projectDir = "C:/@/Web/Template/Angle/portal_profcontrol_cliente/src";
 const ___DRY_RUN = (process.env.DRY_RUN || process.env.npm_config_dry_run) ?? false;
 const ___EXT = process.env.EXT;
 
@@ -31,6 +32,7 @@ class StyleElement {
         this.id = id;
         this.element = element;
         this.idealName = idealName[0].toLowerCase() + idealName.slice(1);
+        this.bestName = this.idealName;
     }
 }
 
@@ -68,8 +70,18 @@ for (const fileIndex in files) {
     const objectExpression = [];
     for (const key of Object.keys(file.styles)) {
         const propertie = file.styles[key];
+        let _continue = false;
+        Object.keys(file.styles).forEach(k => {
+            if (k != key)
+                if (t.isNodesEquivalent(propertie.element, file.styles[k].element)) {
+                    file.styles[k].bestName = propertie.bestName;
+                    _continue = true;
+                }
+        });
+        if (_continue) continue;
+
         objectExpression.push(
-            t.objectProperty(t.identifier(propertie.idealName), propertie.element)
+            t.objectProperty(t.identifier(propertie.bestName), propertie.element)
         );
     }
     const nodeObjectExpression = t.objectExpression(objectExpression);
@@ -102,7 +114,7 @@ for (const fileIndex in files) {
                     if (!prop.value.expression.properties.some(x => !(x.value.type == "StringLiteral" || x.value.type == "NumericLiteral")))
                         prop.value.expression = t.memberExpression(
                             t.identifier("styles"),
-                            t.identifier(file.styles[id(path)].idealName)
+                            t.identifier(file.styles[id(path)].bestName)
                         );
         }
     });
