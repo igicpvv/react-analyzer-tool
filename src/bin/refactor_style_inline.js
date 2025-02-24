@@ -5,7 +5,8 @@ const traverse = require("@babel/traverse").default;
 const generator = require("@babel/generator").default;
 const t = require("@babel/types");
 
-const projectDir = process.env.projectDir || process.env.npm_config_projectDir;
+// const projectDir = process.env.projectDir || process.env.npm_config_projectDir;
+const projectDir = "C:/@/WebApiScheduling/ProfControl-Scheduling/portal_profcontrol_scheduling/src";
 const ___DRY_RUN = (process.env.DRY_RUN || process.env.npm_config_dry_run) ?? false;
 const ___EXT = process.env.EXT;
 
@@ -61,7 +62,7 @@ for (const fileIndex in files) {
 
             for (const prop of list)
                 if (prop.value.expression.type == "ObjectExpression")
-                    if (!prop.value.expression.properties.some(x => !(x.value.type == "StringLiteral" || x.value.type == "NumericLiteral")))
+                    if (!prop.value.expression.properties.some(x => !(!!x.value && (x.value.type == "StringLiteral" || x.value.type == "NumericLiteral"))))
                         file.styles[id(path)] = new StyleElement(id(path), prop.value.expression, path.node.openingElement.name.name);
         }
     });
@@ -110,7 +111,7 @@ for (const fileIndex in files) {
 
             for (const prop of list)
                 if (prop.value.expression.type == "ObjectExpression")
-                    if (!prop.value.expression.properties.some(x => !(x.value.type == "StringLiteral" || x.value.type == "NumericLiteral")))
+                    if (!prop.value.expression.properties.some(x => !(!!x.value && (x.value.type == "StringLiteral" || x.value.type == "NumericLiteral"))))
                         prop.value.expression = t.memberExpression(
                             t.identifier("styles"),
                             t.identifier(file.styles[id(path)].bestName)
