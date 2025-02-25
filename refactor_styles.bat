@@ -1,1 +1,1 @@
-npm run refactor:styles --projectDir=C:/@/Web/Template/Angle/portal_profcontrol_cliente/src --dry-run
+npm run refactor:styles --projectDir=C:/@/WebApiScheduling/ProfControl-Scheduling/portal_profcontrol_scheduling/src --dry-run

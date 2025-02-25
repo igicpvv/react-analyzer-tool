@@ -45,6 +45,8 @@ for (const fileIndex in files) {
         plugins: ["jsx", "classProperties"]
     });
 
+    const constStyle = [];
+
     const file = new FileElement(fileIndex);
     total_files.push(file);
     let lastPathImport = null;
@@ -67,10 +69,11 @@ for (const fileIndex in files) {
         }
     });
 
-    const objectExpression = [];
+    if (file.name.indexOf("FormPayment") != -1)
+        console.log("X");
+
     for (const key of Object.keys(file.styles)) {
         const propertie = file.styles[key];
-        let _continue = false;
         Object.keys(file.styles).forEach(k => {
             if (k != key)
                 if (t.isNodesEquivalent(propertie.element, file.styles[k].element)) {
@@ -78,12 +81,18 @@ for (const fileIndex in files) {
                     _continue = true;
                 }
         });
-        if (_continue) continue;
 
-        objectExpression.push(
-            t.objectProperty(t.identifier(propertie.bestName), propertie.element)
-        );
+        if (!constStyle[propertie.bestName])
+            constStyle[propertie.bestName] = t.objectProperty(t.identifier(propertie.bestName), propertie.element);
     }
+
+    const objectExpression = [];
+    for (const key of Object.keys(constStyle))
+        objectExpression.push(
+            constStyle[key]
+        );
+
+
     const nodeObjectExpression = t.objectExpression(objectExpression);
 
     const newVariableDeclaration = t.variableDeclaration("const", [
